@@ -64,7 +64,7 @@ app.get('/api/persons', (req, res) => {
 
 // *** HAETAAN YKSI HENKILÖ ***
 app.get('/api/persons/:id', (req, res) => {
-    Person.findById(request.params.id).then(person => {
+    Person.findById(req.params.id).then(person => {
         res.json(person)
     })
 })
