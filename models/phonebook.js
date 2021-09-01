@@ -12,12 +12,12 @@ mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true })
         console.log('error connecting to MongoDB: ', error.message)
     })
 
-const phonebookSchema = new mongoose.Schema({
+const personSchema = new mongoose.Schema({
     name: String,
     number: String,
 })
 
-phonebookSchema.set('toJSON', {
+personSchema.set('toJSON', {
     transform: (document, returnedObject) => {
         returnedObject.id = returnedObject._id.toString()
         delete returnedObject._id
@@ -25,4 +25,4 @@ phonebookSchema.set('toJSON', {
     }
 })
 
-module.exports = mongoose.model('Phonebook', phonebookSchema)
+module.exports = mongoose.model('Person', personSchema)
