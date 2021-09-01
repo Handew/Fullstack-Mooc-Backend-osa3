@@ -4,33 +4,11 @@ const morgan = require('morgan')
 const app = express()
 const cors = require('cors')
 const Person = require('./models/person')
+const { response } = require('express')
 
 app.use(cors())
-app.use(express.json())
 app.use(express.static('build'))
-
-// let persons = [
-//     {
-//         id: 1,
-//         name: "Arto Hellas",
-//         number: "040-123456"
-//     },
-//     {
-//         id: 2,
-//         name: "Ada Lovelace",
-//         number: "39-44-5323523"
-//     },
-//     {
-//         id: 3,
-//         name: "Dan Abramov",
-//         number: "12-43-234345"
-//     },
-//     {
-//         id: 4,
-//         name: "Mary Poppendick",
-//         number: "39-23-6423122"
-//     }
-// ]
+app.use(express.json())
 
 morgan.token('body', function getBody (req) {
     return JSON.stringify(req.body)
@@ -43,16 +21,21 @@ app.use(morgan(function (tokens, req, res) {
       tokens.status(req, res),
       tokens.res(req, res, 'content-length'), '-',
       tokens['response-time'](req, res), 'ms',
-      tokens.body(req, res),
-        
+      tokens.body(req, res),       
     ].join(' ')
   }))
 
 app.get('/info', (req, res) => {
-    let people = persons.length
     let date = new Date()
-    res.send(`<p>Phonebook has info for ${people} people</p>
-    ${date}`)
+    let countP = Person.find({}).length
+    console.log("määrän haku", Number(countP))
+
+    res.send(`<p>Phonebook has info for ${countP} people</p>${date}`)
+    // })  
+    // let people = persons.length
+    // let date = new Date()
+    // res.send(`<p>Phonebook has info for ${people} people</p>
+    // ${date}`)
 })
 
 // *** HAETAAN KAIKKI HENKILÖT ***
@@ -63,18 +46,20 @@ app.get('/api/persons', (req, res) => {
 })
 
 // *** HAETAAN YKSI HENKILÖ ***
-app.get('/api/persons/:id', (req, res) => {
-    Person.findById(req.params.id).then(person => {
-        res.json(person)
-    })
+app.get('/api/persons/:id', (req, res, next) => {
+    Person.findById(req.params.id)
+        .then(person => {
+            if (person) {
+                res.json(person)
+            } else {
+                res.status(404).end()
+            }
+        })
+        .catch(error => next(error))
 })
 
-// const randomId = (max) => {
-//     return Math.floor(Math.random() * max)
-// }
-
 // *** LUODAAN UUSI HENKILÖ ***
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
     const body = req.body   
 
     if (body.name === undefined) {
@@ -87,11 +72,6 @@ app.post('/api/persons', (req, res) => {
             error: 'number missing'
         })
     }
-    // if (persons.find(p => p.name === body.name)) {
-    //     return res.status(400).json({
-    //         error: 'name must be unique'
-    //     })
-    // }
 
     const person = new Person({
         name: body.name,
@@ -101,15 +81,44 @@ app.post('/api/persons', (req, res) => {
     person.save().then(savedPerson => {
         res.json(savedPerson)
     })
+    .catch(error => next(error))
+})
+
+// *** HENKILÖN NUMERON MUOKKAUS ***
+app.put('/api/persons/:id', (req, res, next) => {
+    const body = req.body
+
+    const person = {
+        number: body.number
+    }
+
+    Person.findByIdAndUpdate(req.params.id, person)
+        .then(updatedPerson => {
+            res.json(updatedPerson)
+        })
+        .catch(error => next(error))
 })
 
 // *** POISTETAAN HENKILÖ ***
-app.delete('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    persons = persons.filter(person => person.id !== id)
-
-    res.status(204).end()
+app.delete('/api/persons/:id', (req, res, next) => {
+    Person.findByIdAndRemove(req.params.id)
+        .then(result => {
+            res.status(204).end()
+        })
+        .catch(error => next(error))
 })
+
+const errorHandler = (error, req, res, next) => {
+    console.error(error.message)
+
+    if (error.name === 'CastError') {
+        return res.status(400).send({ error: 'malformatted id' })
+    }
+
+    next(error)
+}
+
+app.use(errorHandler)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
