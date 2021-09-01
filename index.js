@@ -65,49 +65,43 @@ app.get('/api/persons', (req, res) => {
 
 // *** HAETAAN YKSI HENKILÖ ***
 app.get('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    const person = persons.find(person => person.id === id)
-
-    if (person) {
+    Person.findById(request.params.id).then(person => {
         res.json(person)
-    } else {
-        res.status(404).end()
-    } 
+    })
 })
 
-const randomId = (max) => {
-    return Math.floor(Math.random() * max)
-}
+// const randomId = (max) => {
+//     return Math.floor(Math.random() * max)
+// }
 
 // *** LUODAAN UUSI HENKILÖ ***
 app.post('/api/persons', (req, res) => {
     const body = req.body   
 
-    if (!body.name) {
+    if (body.name === undefined) {
         return res.status(400).json({
             error: 'name missing'
         })
     }
-    if (!body.number) {
+    if (body.number === undefined) {
         return res.status(400).json({
             error: 'number missing'
         })
     }
-    if (persons.find(p => p.name === body.name)) {
-        return res.status(400).json({
-            error: 'name must be unique'
-        })
-    }
+    // if (persons.find(p => p.name === body.name)) {
+    //     return res.status(400).json({
+    //         error: 'name must be unique'
+    //     })
+    // }
 
-    const person = {
-        id: Number(randomId(9999)),
+    const person = new Person({
         name: body.name,
         number: body.number,
-    }
+    })
 
-    persons = persons.concat(person)
-
-    res.json(person)
+    person.save().then(savedPerson => {
+        res.json(savedPerson)
+    })
 })
 
 // *** POISTETAAN HENKILÖ ***
