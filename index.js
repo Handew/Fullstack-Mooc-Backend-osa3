@@ -5,6 +5,7 @@ const app = express()
 const cors = require('cors')
 const Person = require('./models/person')
 const { response } = require('express')
+const { count } = require('./models/person')
 
 app.use(cors())
 app.use(express.static('build'))
@@ -27,15 +28,10 @@ app.use(morgan(function (tokens, req, res) {
 
 app.get('/info', (req, res) => {
     let date = new Date()
-    let countP = Person.find({}).length
+    let countP = Person.find({}).lenght
     console.log("määrän haku", Number(countP))
 
     res.send(`<p>Phonebook has info for ${countP} people</p>${date}`)
-    // })  
-    // let people = persons.length
-    // let date = new Date()
-    // res.send(`<p>Phonebook has info for ${people} people</p>
-    // ${date}`)
 })
 
 // *** HAETAAN KAIKKI HENKILÖT ***
@@ -113,6 +109,8 @@ const errorHandler = (error, req, res, next) => {
 
     if (error.name === 'CastError') {
         return res.status(400).send({ error: 'malformatted id' })
+    } else if (error.name === 'ValidationError') {
+        return res.status(400).json({ error: error.message })
     }
 
     next(error)
